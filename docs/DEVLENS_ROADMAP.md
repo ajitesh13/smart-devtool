@@ -32,18 +32,18 @@ native Memory tab never made approachable.
 - [x] Real Performance tab replacing the "Phase 2" placeholder (`components/performance/PerformancePanel.tsx`)
 - [x] Remove per-call AI "Explain request" wiring (kept `anthropic-client.ts` / `ai.store` for later macro-AI)
 
-## Tier 2 — Network Superpowers 🔜
+## Tier 2 — Network Superpowers ✅
 
-- [ ] Response/status **override + mocking** — force status code / body / delay via CDP `Fetch` domain *(native cannot override status codes)*
-- [ ] Capture **request bodies** (currently never populated) — prerequisite for mocking + inspection
-- [ ] Per-request / per-pattern throttling *(native throttling is tab-global only)*
-- [ ] GraphQL-aware grouping — parse `operationName`, split query/variables/errors *(native lumps all GraphQL into one opaque POST)*
-- [ ] Deep WS frame stream + SSE event-stream inspector (JSON tree, filter, replay); track WS lifecycle (`webSocketCreated`/handshake/`webSocketClosed`)
+- [x] Response/status **override + mocking** — force status code / body / delay via CDP `Fetch` domain (`background/mock-interceptor.ts`, `Mocks` tab) *(native cannot override status codes)*
+- [x] Capture **request bodies** — populated from `Network.requestWillBeSent` postData (+ `getRequestPostData` fallback)
+- [x] Per-request / per-pattern throttling — `delayMs` per rule via `Fetch.continueRequest` latency *(native throttling is tab-global only)*
+- [x] GraphQL-aware grouping — parse `operationName`, group by operation/type (`shared/graphql.ts`) *(native lumps all GraphQL into one opaque POST)*
+- [x] Deep WS frame stream + SSE event-stream inspector (JSON pretty-print, direction/search filter); track WS lifecycle (`webSocketCreated`/handshake/`webSocketClosed`)
 
-## Tier 3 — Correlation Capstone 🔮
+## Tier 3 — Correlation Capstone ✅
 
-- [ ] Unified timeline — network + console + perf on one time axis, click-to-cross-filter
-- [ ] Macro-AI (reuses kept client) — "explain this leak / this waterfall / why these errors correlate", opt-in + key-gated
+- [x] Unified timeline — network + console + perf on one time axis, click-to-cross-filter (`shared/timeline.ts`, `Timeline` tab)
+- [x] Macro-AI (reuses kept client) — "explain this leak / this waterfall / why these errors correlate", opt-in + key-gated, **metadata-only** (`components/ai/AIAnalysisPanel.tsx`)
 
 ---
 
@@ -58,3 +58,49 @@ native Memory tab never made approachable.
 - No request bodies sent to AI unless the user explicitly triggers a macro-AI action.
 - MCP connection is localhost-only; no external exposure.
 - No analytics or telemetry.
+
+---
+
+## Manual verification checklist
+
+> All items below are implemented and pass automated checks (`npm run build`, `npx tsc --noEmit`, 35 unit tests).
+> **You** tick these after hands-on testing in Chrome. Load the unpacked build (`devlens/dist`) via `chrome://extensions` → Load unpacked, then open DevTools → **DevLens** on a real page.
+>
+> Status legend: leave `[ ]` until verified, set `[x]` once confirmed. Add notes inline after any item that misbehaves.
+
+### Tier 1 — Performance
+
+- [ ] **Live vitals update ~1 Hz** — Performance tab shows heap / nodes / listeners moving; sparklines scroll.
+  - *How:* open a heavy SPA, watch the numbers tick each second.
+- [ ] **Node count tracks reality** — open a big modal/list → `Nodes` jumps up; close it → drops back.
+- [ ] **Threshold coloring** — a steadily climbing heap/nodes value turns red (not stuck green).
+- [ ] **DOM provenance (live)** — the "which subtree is growing" list names the container that just grew.
+  - *How:* mount a large component, confirm its container tops the provenance bars.
+- [ ] **Leak scan (on-demand)** — click Scan; after mounting+unmounting a component that leaks a listener, a detached-node group appears.
+- [ ] **No "Explain" button** on individual requests (per-call AI was cut).
+
+### Tier 2 — Network superpowers
+
+- [ ] **Status override** — add a Mocks rule forcing a real 200 endpoint to `500`; reload; the app receives 500 and the request row shows a **MOCKED** badge.
+- [ ] **Body override** — set a JSON body on a rule; confirm the page sees the replaced body, not the original.
+- [ ] **Fail request** — set fail reason `Failed`; confirm the request errors in the app as a network failure.
+- [ ] **Per-pattern throttle** — set `delayMs: 3000` on one endpoint only; confirm just that call is slow, others stay fast.
+- [ ] **Rule persistence** — reload DevTools; saved rules are still present (loaded from `chrome.storage.local`).
+- [ ] **Request bodies captured** — a POST shows its request body in the Body tab.
+- [ ] **GraphQL grouping** — hitting a `/graphql` endpoint shows the operation name + type badge; grouping by GraphQL operation splits calls by name.
+- [ ] **WS inspector** — a live WebSocket shows lifecycle state (connecting/open/closed) and frames; direction + search filters work; JSON frames pretty-print on expand.
+- [ ] **SSE inspector** — an `text/event-stream` endpoint lists events with name/id/timestamp; search filters; JSON data pretty-prints.
+
+### Tier 3 — Correlation capstone
+
+- [ ] **Timeline renders 3 lanes** — network / console / perf markers appear on one axis after activity.
+- [ ] **Cross-filter click** — clicking a network marker selects that request and jumps to the Network tab; a console marker jumps to Console filtered to that message; a perf marker jumps to Performance.
+- [ ] **Marker severity colors** — 5xx/errors are red, 4xx/warnings amber, 2xx green.
+- [ ] **Macro-AI (leak)** — with an API key set, "Explain leak" streams a diagnosis; with no key it shows the "configure key" message (does **not** crash).
+- [ ] **Macro-AI privacy** — confirm (via network panel on the extension itself, or code review) the AI request payload contains only metadata summaries — **no request/response bodies**.
+
+### Security invariants (spot-check)
+
+- [ ] API key never leaves `chrome.storage.local` except in the explicit Anthropic call.
+- [ ] No telemetry/analytics network calls originate from the extension.
+- [ ] MCP bridge only ever targets `localhost`.
