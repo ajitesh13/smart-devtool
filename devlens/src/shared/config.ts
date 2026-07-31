@@ -9,6 +9,7 @@ export const getConfig = async (): Promise<Config> => {
     'tier',
     'excludePatterns',
     'heuristicConsoleLinks',
+    'mockRules',
   ])
   return stored as Config
 }

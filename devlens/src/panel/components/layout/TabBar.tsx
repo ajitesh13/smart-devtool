@@ -1,6 +1,13 @@
 import type { FC } from 'react'
 
-export type TabId = 'network' | 'console' | 'performance' | 'ai' | 'settings'
+export type TabId =
+  | 'network'
+  | 'console'
+  | 'performance'
+  | 'mocks'
+  | 'timeline'
+  | 'ai'
+  | 'settings'
 
 interface Tab {
   id: TabId
@@ -11,6 +18,8 @@ const TABS: Tab[] = [
   { id: 'network', label: 'Network' },
   { id: 'console', label: 'Console' },
   { id: 'performance', label: 'Performance' },
+  { id: 'mocks', label: 'Mocks' },
+  { id: 'timeline', label: 'Timeline' },
   { id: 'ai', label: 'AI' },
   { id: 'settings', label: 'Settings' },
 ]

@@ -5,6 +5,17 @@ export interface WSFrame {
   size: number
 }
 
+/** A single Server-Sent Event captured off an EventSource stream. */
+export interface SSEEvent {
+  eventName?: string
+  data: string
+  eventId?: string
+  timestamp: number
+}
+
+export type WSState = 'connecting' | 'open' | 'closed'
+export type GraphQLType = 'query' | 'mutation' | 'subscription'
+
 export interface NetworkRequest {
   id: string
   url: string
@@ -18,7 +29,35 @@ export interface NetworkRequest {
   responseBody?: string
   timing: { start: number; end?: number; duration?: number }
   wsFrames?: WSFrame[]
+  wsState?: WSState
+  sseEvents?: SSEEvent[]
+  // Populated when the request body is a GraphQL operation
+  graphqlOperation?: string
+  graphqlType?: GraphQLType
+  // Set when a DevLens mock rule altered this response
+  mocked?: boolean
   error?: string
+}
+
+/** A user-defined request override / mock / throttle rule. */
+export interface MockRule {
+  id: string
+  enabled: boolean
+  /** Substring or regex (see isRegex) matched against the request URL. */
+  urlPattern: string
+  isRegex?: boolean
+  /** Only match this HTTP method (empty = any). */
+  method?: string
+  /** Force this status code on the response (undefined = passthrough status). */
+  status?: number
+  /** Replace the response body (undefined = passthrough body). */
+  body?: string
+  /** Override the Content-Type of the mocked response. */
+  contentType?: string
+  /** Add this many ms of latency before the response resolves. */
+  delayMs?: number
+  /** Fail the request with this CDP error reason (e.g. "Failed"). */
+  failReason?: string
 }
 
 export interface StackFrame {
@@ -91,4 +130,5 @@ export interface Config {
   tier?: Tier
   excludePatterns?: string[]
   heuristicConsoleLinks?: boolean
+  mockRules?: MockRule[]
 }

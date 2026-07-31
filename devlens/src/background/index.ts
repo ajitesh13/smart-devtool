@@ -2,12 +2,16 @@ import { NetworkInterceptor } from './network-interceptor'
 import { WSInterceptor } from './ws-interceptor'
 import { ConsoleInterceptor } from './console-interceptor'
 import { PerfInterceptor } from './perf-interceptor'
+import { MockInterceptor } from './mock-interceptor'
+import { getConfig, setConfig } from '../shared/config'
+import type { MockRule } from '../shared/types'
 
 interface TabInterceptors {
   network: NetworkInterceptor
   ws: WSInterceptor
   console: ConsoleInterceptor
   perf: PerfInterceptor
+  mock: MockInterceptor
 }
 
 const interceptors = new Map<number, TabInterceptors>()
@@ -96,6 +100,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
   }
 
+  if (type === 'SET_MOCK_RULES') {
+    const entry = interceptors.get(tabId)
+    const rules = (payload?.rules ?? []) as MockRule[]
+    setConfig({ mockRules: rules }).catch(() => undefined)
+    if (!entry) {
+      sendResponse({ ok: true })
+      return true
+    }
+    entry.mock
+      .setRules(rules)
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => sendResponse({ ok: false, error: String(err) }))
+    return true
+  }
+
+  if (type === 'GET_MOCK_RULES') {
+    getConfig()
+      .then((cfg) => sendResponse({ rules: cfg.mockRules ?? [] }))
+      .catch(() => sendResponse({ rules: [] }))
+    return true
+  }
+
   if (type === 'SEND_TO_MCP' && payload) {
     import('./mcp-bridge').then(({ MCPBridge }) => {
       MCPBridge.getInstance().send(payload)
@@ -113,15 +139,23 @@ async function attachToTab(tabId: number): Promise<void> {
   const ws = new WSInterceptor(tabId, network)
   const console = new ConsoleInterceptor(tabId, network)
   const perf = new PerfInterceptor(tabId)
-  interceptors.set(tabId, { network, ws, console, perf })
+  const mock = new MockInterceptor(tabId, network)
+  interceptors.set(tabId, { network, ws, console, perf, mock })
   await network.enable()
   await ws.enable()
   await console.enable()
   await perf.enable()
+  // Fetch interception must be enabled AFTER Network so paused requests still
+  // correlate; only activates if the user already has saved rules.
+  const cfg = await getConfig()
+  if (cfg.mockRules?.length) await mock.setRules(cfg.mockRules)
 }
 
 async function detachFromTab(tabId: number): Promise<void> {
-  if (!interceptors.has(tabId)) return
+  const entry = interceptors.get(tabId)
+  if (!entry) return
+  entry.mock.destroy()
+  entry.perf.destroy()
   await chrome.debugger.detach({ tabId })
   interceptors.delete(tabId)
 }
