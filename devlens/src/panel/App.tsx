@@ -4,6 +4,9 @@ import { StatusBar } from './components/layout/StatusBar'
 import { MultiPaneView } from './components/network/MultiPaneView'
 import { ConsolePanel } from './components/console/ConsolePanel'
 import { PerformancePanel } from './components/performance/PerformancePanel'
+import { MocksPanel } from './components/mocks/MocksPanel'
+import { TimelinePanel } from './components/timeline/TimelinePanel'
+import { AIAnalysisPanel } from './components/ai/AIAnalysisPanel'
 import { AIDrawer } from './components/ai/AIDrawer'
 import { SettingsPanel } from './components/settings/SettingsPanel'
 import { useNetworkStore } from './store/network.store'
@@ -72,11 +75,9 @@ const App: FC = () => {
         {activeTab === 'network' && <MultiPaneView />}
         {activeTab === 'console' && <ConsolePanel />}
         {activeTab === 'performance' && <PerformancePanel />}
-        {activeTab === 'ai' && (
-          <div className="flex items-center justify-center h-full text-sm text-gray-400">
-            Claude Code panel — Phase 3
-          </div>
-        )}
+        {activeTab === 'mocks' && <MocksPanel />}
+        {activeTab === 'timeline' && <TimelinePanel />}
+        {activeTab === 'ai' && <AIAnalysisPanel />}
         {activeTab === 'settings' && <SettingsPanel />}
       </div>
 
