@@ -11,6 +11,7 @@ const FIELDS: { value: FilterField; label: string }[] = [
   { value: 'reqBody', label: 'Req Body' },
   { value: 'resBody', label: 'Res Body' },
   { value: 'duration', label: 'Duration' },
+  { value: 'gqlOp', label: 'GraphQL Op' },
 ]
 
 const OPS: { value: FilterOp; label: string }[] = [

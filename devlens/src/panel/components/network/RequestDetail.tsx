@@ -2,8 +2,9 @@ import type { FC } from 'react'
 import { useState } from 'react'
 import type { NetworkRequest } from '../../../shared/types'
 import { WebSocketViewer } from './WebSocketViewer'
+import { SSEViewer } from './SSEViewer'
 
-type DetailTab = 'headers' | 'body' | 'frames' | 'timing'
+type DetailTab = 'headers' | 'body' | 'frames' | 'events' | 'timing'
 
 interface Props {
   request: NetworkRequest
@@ -16,6 +17,7 @@ export const RequestDetail: FC<Props> = ({ request }) => {
     { id: 'headers', label: 'Headers' },
     { id: 'body', label: 'Body' },
     { id: 'frames', label: 'Frames', hidden: request.protocol !== 'WS' },
+    { id: 'events', label: 'Events', hidden: request.protocol !== 'SSE' },
     { id: 'timing', label: 'Timing' },
   ]
 
@@ -25,6 +27,23 @@ export const RequestDetail: FC<Props> = ({ request }) => {
         <span className="font-mono text-xs truncate text-gray-700 dark:text-gray-300 max-w-xs">
           {request.method} {new URL(request.url).pathname}
         </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {request.graphqlOperation && (
+            <span className="px-1.5 py-0.5 rounded bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 text-[10px] font-medium">
+              {request.graphqlType} {request.graphqlOperation}
+            </span>
+          )}
+          {request.wsState && (
+            <span className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px]">
+              WS {request.wsState}
+            </span>
+          )}
+          {request.mocked && (
+            <span className="px-1.5 py-0.5 rounded bg-amber-400 text-amber-900 text-[10px] font-semibold">
+              MOCKED
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
@@ -91,8 +110,12 @@ export const RequestDetail: FC<Props> = ({ request }) => {
           </div>
         )}
 
-        {tab === 'frames' && request.wsFrames && (
-          <WebSocketViewer frames={request.wsFrames} />
+        {tab === 'frames' && (
+          <WebSocketViewer frames={request.wsFrames ?? []} />
+        )}
+
+        {tab === 'events' && (
+          <SSEViewer events={request.sseEvents ?? []} />
         )}
 
         {tab === 'timing' && (

@@ -9,6 +9,7 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: 'endpoint', label: 'Endpoint' },
   { value: 'status-class', label: 'Status class' },
   { value: 'method', label: 'Method' },
+  { value: 'graphql-operation', label: 'GraphQL operation' },
   { value: 'regex-capture', label: 'Regex capture' },
 ]
 

@@ -12,6 +12,7 @@ export type FilterField =
   | 'reqBody'
   | 'resBody'
   | 'duration'
+  | 'gqlOp'
 
 export type FilterOp = 'regex' | 'eq' | 'contains' | 'gt' | 'lt' | 'range'
 
@@ -38,6 +39,7 @@ export type GroupBy =
   | 'status-class'
   | 'protocol'
   | 'method'
+  | 'graphql-operation'
   | 'regex-capture'
 
 export interface GroupConfig {
@@ -97,6 +99,8 @@ function fieldValue(req: NetworkRequest, field: FilterField): string {
       return req.responseBody ?? ''
     case 'duration':
       return String(req.timing.duration ?? '')
+    case 'gqlOp':
+      return req.graphqlOperation ?? ''
   }
 }
 
@@ -225,6 +229,10 @@ function groupKey(req: NetworkRequest, config: GroupConfig): string {
       return req.protocol
     case 'method':
       return req.method
+    case 'graphql-operation':
+      return req.graphqlOperation
+        ? `${req.graphqlType ?? 'query'} ${req.graphqlOperation}`
+        : '(not GraphQL)'
     case 'regex-capture': {
       if (!config.capturePattern) return '(no pattern)'
       const re = compileRegex(config.capturePattern)

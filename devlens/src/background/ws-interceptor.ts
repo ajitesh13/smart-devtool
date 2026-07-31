@@ -25,16 +25,53 @@ export class WSInterceptor {
   ): void => {
     if (source.tabId !== this.tabId) return
     const p = params as Record<string, unknown>
+    const requestId = p['requestId'] as string
 
-    if (method === 'Network.webSocketFrameSent' || method === 'Network.webSocketFrameReceived') {
-      const requestId = p['requestId'] as string
-      const frame = p['response'] as Record<string, unknown>
-      this.networkInterceptor.addWSFrame(requestId, {
-        type: method === 'Network.webSocketFrameSent' ? 'send' : 'receive',
-        data: frame['payloadData'] as string,
-        timestamp: Date.now(),
-        size: ((frame['payloadData'] as string) ?? '').length,
-      })
+    switch (method) {
+      // Lifecycle — create a record even without a matching requestWillBeSent
+      case 'Network.webSocketCreated': {
+        const req = this.networkInterceptor.ensureRequest(requestId, p['url'] as string, 'WS')
+        req.wsState = 'connecting'
+        break
+      }
+      case 'Network.webSocketHandshakeResponseReceived': {
+        const req = this.networkInterceptor.getRequest(requestId)
+        if (req) {
+          req.wsState = 'open'
+          const resp = p['response'] as Record<string, unknown> | undefined
+          if (resp) {
+            req.status = resp['status'] as number
+            req.statusText = resp['statusText'] as string
+          }
+        }
+        break
+      }
+      case 'Network.webSocketClosed': {
+        const req = this.networkInterceptor.getRequest(requestId)
+        if (req) {
+          req.wsState = 'closed'
+          req.timing.end = Date.now()
+          req.timing.duration = req.timing.end - req.timing.start
+        }
+        break
+      }
+      case 'Network.webSocketFrameError': {
+        const req = this.networkInterceptor.getRequest(requestId)
+        if (req) req.error = (p['errorMessage'] as string) ?? 'WebSocket frame error'
+        break
+      }
+      case 'Network.webSocketFrameSent':
+      case 'Network.webSocketFrameReceived': {
+        const frame = p['response'] as Record<string, unknown>
+        const data = (frame['payloadData'] as string) ?? ''
+        this.networkInterceptor.addWSFrame(requestId, {
+          type: method === 'Network.webSocketFrameSent' ? 'send' : 'receive',
+          data,
+          timestamp: Date.now(),
+          size: data.length,
+        })
+        break
+      }
     }
   }
 }
