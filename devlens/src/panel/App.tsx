@@ -3,10 +3,12 @@ import { TabBar } from './components/layout/TabBar'
 import { StatusBar } from './components/layout/StatusBar'
 import { MultiPaneView } from './components/network/MultiPaneView'
 import { ConsolePanel } from './components/console/ConsolePanel'
+import { PerformancePanel } from './components/performance/PerformancePanel'
 import { AIDrawer } from './components/ai/AIDrawer'
 import { SettingsPanel } from './components/settings/SettingsPanel'
 import { useNetworkStore } from './store/network.store'
 import { useConsoleStore } from './store/console.store'
+import { usePerfStore } from './store/perf.store'
 import { useUIStore } from './store/ui.store'
 import { getConfig } from '../shared/config'
 
@@ -16,6 +18,7 @@ const App: FC = () => {
   const [mcpConnected, setMcpConnected] = useState(false)
   const { setRequests, setCapturing } = useNetworkStore()
   const setConsoleEntries = useConsoleStore((s) => s.setEntries)
+  const setPerfSnapshots = usePerfStore((s) => s.setSnapshots)
 
   // Poll for new requests + console entries from background service worker
   useEffect(() => {
@@ -29,12 +32,14 @@ const App: FC = () => {
       setCapturing(true)
 
       intervalId = setInterval(async () => {
-        const [reqRes, conRes] = await Promise.all([
+        const [reqRes, conRes, perfRes] = await Promise.all([
           chrome.runtime.sendMessage({ type: 'GET_REQUESTS', tabId }),
           chrome.runtime.sendMessage({ type: 'GET_CONSOLE', tabId }),
+          chrome.runtime.sendMessage({ type: 'GET_PERF', tabId }),
         ])
         if (reqRes?.requests) setRequests(reqRes.requests)
         if (conRes?.entries) setConsoleEntries(conRes.entries)
+        if (perfRes?.snapshots) setPerfSnapshots(perfRes.snapshots)
       }, 500)
     }
 
@@ -46,7 +51,7 @@ const App: FC = () => {
       chrome.runtime.sendMessage({ type: 'DETACH_DEBUGGER', tabId })
       setCapturing(false)
     }
-  }, [setRequests, setCapturing, setConsoleEntries])
+  }, [setRequests, setCapturing, setConsoleEntries, setPerfSnapshots])
 
   // Auto-connect to Claude Code if configured
   useEffect(() => {
@@ -66,11 +71,7 @@ const App: FC = () => {
       <div className="flex-1 overflow-hidden">
         {activeTab === 'network' && <MultiPaneView />}
         {activeTab === 'console' && <ConsolePanel />}
-        {activeTab === 'performance' && (
-          <div className="flex items-center justify-center h-full text-sm text-gray-400">
-            Performance panel — Phase 2
-          </div>
-        )}
+        {activeTab === 'performance' && <PerformancePanel />}
         {activeTab === 'ai' && (
           <div className="flex items-center justify-center h-full text-sm text-gray-400">
             Claude Code panel — Phase 3

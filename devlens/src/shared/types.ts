@@ -48,8 +48,30 @@ export interface PerfSnapshot {
   timestamp: number
   jsHeapUsed: number
   jsHeapTotal: number
+  nodes: number
+  jsEventListeners: number
+  documents: number
+  frames: number
+  layoutCount: number
+  recalcStyleCount: number
+  // Cumulative CPU-time counters (seconds). Turn into a CPU % via cpuPercentBetween().
+  scriptDuration: number
+  taskDuration: number
   fps?: number
   longTasks?: number
+}
+
+/** One top-level DOM subtree and how many nodes hang off it (provenance). */
+export interface DomSubtree {
+  label: string
+  nodeCount: number
+}
+
+/** A class of detached DOM nodes still retained by JS (leak candidate). */
+export interface DetachedNode {
+  description: string
+  count: number
+  retainedSize?: number
 }
 
 export interface DebugContext {

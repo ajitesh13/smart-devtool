@@ -2,7 +2,6 @@ import type { FC } from 'react'
 import { useState } from 'react'
 import type { NetworkRequest } from '../../../shared/types'
 import { WebSocketViewer } from './WebSocketViewer'
-import { ExplainButton } from '../ai/ExplainButton'
 
 type DetailTab = 'headers' | 'body' | 'frames' | 'timing'
 
@@ -26,7 +25,6 @@ export const RequestDetail: FC<Props> = ({ request }) => {
         <span className="font-mono text-xs truncate text-gray-700 dark:text-gray-300 max-w-xs">
           {request.method} {new URL(request.url).pathname}
         </span>
-        <ExplainButton request={request} />
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
