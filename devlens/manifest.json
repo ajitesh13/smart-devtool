@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "DevLens",
+  "version": "0.1.0",
+  "description": "AI-powered network inspector and debugger for developers",
+  "permissions": ["debugger", "tabs", "storage", "scripting", "webRequest"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "devtools_page": "src/devtools/index.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/state-observer.ts"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
